@@ -1,0 +1,191 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>무더위쉼터 지도 및 의견 제안</title>
+
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin: 50px;
+      background-color: #f5f5f5;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      margin: 10px 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      filter: brightness(90%);
+    }
+
+    .kakao {
+      background-color: #FEE500;
+      color: #3C1E1E;
+    }
+
+    .naver {
+      background-color: #03C75A;
+    }
+
+    #voteContainer {
+      margin-top: 60px;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+      text-align: left;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+
+    #voteContainer button {
+      margin-top: 20px;
+      background-color: #0078ff;
+      color: white;
+      width: 100%;
+    }
+
+    #thankYouMsg {
+      display: none;
+      color: green;
+      font-weight: bold;
+      margin-top: 20px;
+      text-align: center;
+      transition: opacity 1s ease;
+    }
+
+    .model-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      text-decoration: none;
+      color: #000000;
+      font-weight: bold;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+
+    .model-link:hover {
+      text-decoration: underline;
+    }
+
+    .divider {
+      border-top: 1px solid #ccc;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <a href="http://localhost:8501" class="model-link">예측 모델</a>
+
+  <h1>무더위쉼터 지도에서 보기</h1>
+
+  <button class="kakao" onclick="openKakaoMap()">카카오맵에서 보기</button>
+  <button class="naver" onclick="openNaverMap()">네이버지도에서 보기</button>
+
+
+  <div id="voteContainer">
+    <h2>무더위쉼터가 필요하다고 생각하는 장소를 알려주세요!</h2>
+    <form id="voteForm">
+      <input type="text" id="locationInput" placeholder="예: 서울시 강남구..." required />
+      <textarea id="reasonInput" placeholder="이유를 적어주세요 (선택)" rows="4"></textarea>
+      <button type="submit">의견 제출</button>
+    </form>
+    <p id="thankYouMsg">감사합니다! 의견이 제출되었습니다.</p>
+    <div style="margin-top: 20px; text-align: center;">
+      <a href="./list.html" style="color: #0078ff; text-decoration: underline;">제출된 의견 보기</a>
+    </div>
+  </div>
+
+  <script>
+    function openKakaoMap() {
+      const query = encodeURIComponent("무더위쉼터");
+      const url = `https://map.kakao.com/?q=${query}`;
+      window.open(url, "_blank");
+    }
+
+    function openNaverMap() {
+      const query = encodeURIComponent("무더위쉼터");
+      const url = `https://map.naver.com/v5/search/${query}`;
+      window.open(url, "_blank");
+    }
+
+    const form = document.getElementById('voteForm');
+    const thankYouMsg = document.getElementById('thankYouMsg');
+
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const location = document.getElementById('locationInput').value.trim();
+      const reason = document.getElementById('reasonInput').value.trim();
+
+      if (!location) {
+        alert("장소를 입력해주세요.");
+        return;
+      }
+
+      fetch('/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location, reason })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          thankYouMsg.style.opacity = 1;
+          thankYouMsg.style.display = "block";
+          form.reset();
+
+          setTimeout(() => {
+            thankYouMsg.style.opacity = 0;
+            setTimeout(() => {
+              thankYouMsg.style.display = "none";
+            }, 1000);
+          }, 3000);
+        } else {
+          alert("제출 실패: " + (data.error || "알 수 없는 오류"));
+        }
+      })
+      .catch(err => {
+        alert("서버 오류가 발생했습니다.");
+        console.error(err);
+      });
+    });
+  </script>
+
+</body>
+</html>
